@@ -135,7 +135,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="ds-page-content">
           {children}
         </div>
-        {role === "STUDENT" && <Chatbot studentContext={student} />}
+        <Chatbot studentContext={student} />
       </main>
     </div>
   );

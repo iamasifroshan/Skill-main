@@ -8,23 +8,31 @@ export async function POST(req: Request) {
     try {
         const { message, studentData } = await req.json();
 
+        let contextPrompt = "";
+        if (studentData) {
+            contextPrompt = `
+                The user is a student with the following profile:
+                - Name: ${studentData.name}
+                - Attendance: ${studentData.attendance}%
+                - Subjects & Marks: ${JSON.stringify(studentData.subjects)}
+                - Skills: ${JSON.stringify(studentData.skills)}
+                - Test History: ${JSON.stringify(studentData.testHistory)}
+            `;
+        } else {
+            contextPrompt = `The user is a Faculty member or Admin overseeing the SkillSync platform. Provide general assistance regarding platform features or academic management.`;
+        }
+
         const prompt = `
             You are SkillSync AI, a smart academic assistant.
-            The user is a student with the following profile:
-            - Name: ${studentData.name}
-            - Attendance: ${studentData.attendance}%
-            - Subjects & Marks: ${JSON.stringify(studentData.subjects)}
-            - Skills: ${JSON.stringify(studentData.skills)}
-            - Test History: ${JSON.stringify(studentData.testHistory)}
+            ${contextPrompt}
 
             Guidelines:
-            1. Be encouraging but honest.
-            2. If grades are low (<60), suggest specific improvements.
-            3. If skill gaps exist, suggest learning resources or paths.
+            1. Be professional and helpful.
+            2. If it's a student, offer encouragement and specific study tips based on their data.
+            3. If it's faculty/admin, focus on platform utility and high-level insights.
             4. Keep responses concise and formatted for a chat bubble.
-            5. Use the student's data to answer their specific questions.
 
-            Student Question: "${message}"
+            User Question: "${message}"
         `;
 
         const result = await model.generateContent(prompt);

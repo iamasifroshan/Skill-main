@@ -118,7 +118,7 @@ export default function Chatbot({ studentContext }: { studentContext: any }) {
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                                    placeholder="Ask about your performance..."
+                                    placeholder="Ask SkillSync AI anything..."
                                     style={{ flex: 1, background: "none", border: "none", color: "white", fontSize: "0.9rem", outline: "none" }}
                                 />
                                 <button onClick={handleSend} style={{ background: "#6366f1", border: "none", borderRadius: "8px", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", color: "white", cursor: "pointer" }}>
