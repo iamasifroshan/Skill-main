@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { X, Save } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 
 const V = {
     bg: "rgba(10, 10, 10, 0.8)",
@@ -14,76 +16,83 @@ const V = {
 
 const SUBJECTS = ["Math", "Data Structures", "DBMS", "Networks", "OS"];
 
-export default function StudentDetailsModal({
-    onClose,
-    onSave,
-    readOnly = false,
-    studentName = "",
-    studentEmail = ""
-}: {
+interface ModalProps {
     onClose: () => void;
     onSave: (data: any) => void;
     readOnly?: boolean;
     studentName?: string;
     studentEmail?: string;
-}) {
-    const [marks, setMarks] = useState([0, 0, 0, 0, 0]);
-    const [attendance, setAttendance] = useState(0);
-    const [skills, setSkills] = useState(0);
-    const [progress, setProgress] = useState(0);
-    const [syllabusProgress, setSyllabusProgress] = useState(0);
-    const [skillGaps, setSkillGaps] = useState("");
+}
+
+export default function StudentDetailsModal({ onClose, onSave, readOnly = false, studentName, studentEmail }: ModalProps) {
+    const [loading, setLoading] = useState(true);
+    const [formData, setFormData] = useState({
+        marks: [0, 0, 0, 0, 0],
+        attendance: 0,
+        skillReadiness: 0,
+        progress: 0,
+        syllabusProgress: 0,
+        skillGaps: [] as string[]
+    });
 
     useEffect(() => {
-        if (studentEmail) {
-            const saved = localStorage.getItem(`skillsync-student-data-${studentEmail}`);
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    if (data.marks && Array.isArray(data.marks)) setMarks(data.marks);
-                    else setMarks([0, 0, 0, 0, 0]);
-
-                    setAttendance(parseInt(data.attendance) || 0);
-                    setSkills(parseInt(data.skillReadiness) || 0);
-                    setProgress(parseInt(data.progress) || 0);
-                    setSyllabusProgress(data.syllabusProgress || 0);
-                    setSkillGaps(Array.isArray(data.skillGaps) ? data.skillGaps.join(", ") : (data.skillGaps || ""));
-                    return;
-                } catch (e) { console.error(e); }
+        if (!studentEmail) return;
+        const fetch = async () => {
+            const docRef = doc(db, "students", studentEmail);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const s = snap.data();
+                setFormData({
+                    marks: s.subjects?.map((sub: any) => sub.marks) || [0, 0, 0, 0, 0],
+                    attendance: s.attendance || 0,
+                    skillReadiness: 0, // Calculated or stored separately
+                    progress: 0,
+                    syllabusProgress: s.syllabusProgress || 0,
+                    skillGaps: s.skillGaps || []
+                });
             }
-        }
-        // Cleanup / Default if no record
-        setMarks([0, 0, 0, 0, 0]);
-        setAttendance(0);
-        setSkills(0);
-        setProgress(0);
-        setSyllabusProgress(0);
-        setSkillGaps("");
+            setLoading(false);
+        };
+        fetch();
     }, [studentEmail]);
 
-    const handleSave = () => {
-        const total = marks.reduce((a, b) => a + b, 0);
-        const percentage = total / 5;
-        // Simple CGPA calculation: percentage / 9.5
-        const gpa = (percentage / 9.5).toFixed(1);
+    const handleSave = async () => {
+        if (!studentEmail) return;
 
-        onSave({
-            gpa: parseFloat(gpa) > 10 ? "10.0" : gpa,
-            skillReadiness: `${skills}%`,
-            attendance: `${attendance}%`,
-            progress: `${progress}%`,
-            marks: marks,
-            syllabusProgress,
-            skillGaps: skillGaps.split(",").map(s => s.trim()).filter(Boolean),
-        });
-        onClose();
+        const updateData = {
+            attendance: formData.attendance,
+            subjects: SUBJECTS.map((name, i) => ({
+                name,
+                marks: formData.marks[i]
+            })),
+            syllabusProgress: formData.syllabusProgress,
+            skillGaps: formData.skillGaps,
+        };
+
+        try {
+            await updateDoc(doc(db, "students", studentEmail), updateData);
+            onSave(formData);
+            onClose();
+        } catch (e) {
+            // Fallback for non-existent docs
+            await setDoc(doc(db, "students", studentEmail), {
+                userId: studentEmail,
+                name: studentName,
+                email: studentEmail,
+                ...updateData
+            });
+            onSave(formData);
+            onClose();
+        }
     };
 
     const handleMarkChange = (index: number, val: number) => {
-        const newMarks = [...marks];
+        const newMarks = [...formData.marks];
         newMarks[index] = val;
-        setMarks(newMarks);
+        setFormData(prev => ({ ...prev, marks: newMarks }));
     };
+
+    if (loading && studentEmail) return null; // Or skeleton
 
     return (
         <div style={{
@@ -112,7 +121,7 @@ export default function StudentDetailsModal({
                                 <div key={sub} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
                                     <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>{sub}</span>
                                     <input type="number" max="100" min="0"
-                                        value={marks[i] || ""}
+                                        value={formData.marks[i] || ""}
                                         readOnly={readOnly}
                                         onChange={(e) => handleMarkChange(i, parseInt(e.target.value) || 0)}
                                         style={{ width: "60px", background: V.card, border: `1px solid ${V.border}`, color: V.text, padding: "6px", borderRadius: "6px", textAlign: "center" }}
@@ -125,33 +134,25 @@ export default function StudentDetailsModal({
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                         <div>
                             <label style={{ fontSize: "0.82rem", color: V.dim, fontWeight: 500 }}>Attendance %</label>
-                            <input type="number" max="100" min="0" value={attendance || ""} readOnly={readOnly} onChange={e => setAttendance(parseInt(e.target.value) || 0)}
-                                style={{ width: "100%", background: V.card, border: `1px solid ${V.border}`, color: V.text, padding: "8px", borderRadius: "6px", marginTop: "4px", textAlign: "center" }} />
-                        </div>
-                        <div>
-                            <label style={{ fontSize: "0.82rem", color: V.dim, fontWeight: 500 }}>Skill Readiness %</label>
-                            <input type="number" max="100" min="0" value={skills || ""} readOnly={readOnly} onChange={e => setSkills(parseInt(e.target.value) || 0)}
-                                style={{ width: "100%", background: V.card, border: `1px solid ${V.border}`, color: V.text, padding: "8px", borderRadius: "6px", marginTop: "4px", textAlign: "center" }} />
-                        </div>
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                        <div>
-                            <label style={{ fontSize: "0.82rem", color: V.dim, fontWeight: 500 }}>Course Progress %</label>
-                            <input type="number" max="100" min="0" value={progress || ""} readOnly={readOnly} onChange={e => setProgress(parseInt(e.target.value) || 0)}
+                            <input type="number" max="100" min="0" value={formData.attendance || ""} readOnly={readOnly} onChange={e => setFormData(prev => ({ ...prev, attendance: parseInt(e.target.value) || 0 }))}
                                 style={{ width: "100%", background: V.card, border: `1px solid ${V.border}`, color: V.text, padding: "8px", borderRadius: "6px", marginTop: "4px", textAlign: "center" }} />
                         </div>
                         <div>
                             <label style={{ fontSize: "0.82rem", color: V.dim, fontWeight: 500 }}>Syllabus Progress %</label>
-                            <input type="number" max="100" min="0" value={syllabusProgress || ""} readOnly={readOnly} onChange={e => setSyllabusProgress(parseInt(e.target.value) || 0)}
+                            <input type="number" max="100" min="0" value={formData.syllabusProgress || ""} readOnly={readOnly} onChange={e => setFormData(prev => ({ ...prev, syllabusProgress: parseInt(e.target.value) || 0 }))}
                                 style={{ width: "100%", background: V.card, border: `1px solid ${V.border}`, color: V.text, padding: "8px", borderRadius: "6px", marginTop: "4px", textAlign: "center" }} />
                         </div>
                     </div>
 
                     <div>
                         <label style={{ fontSize: "0.82rem", color: V.dim, fontWeight: 500 }}>Skill Gaps (comma separated)</label>
-                        <input type="text" value={skillGaps} readOnly={readOnly} onChange={e => setSkillGaps(e.target.value)} placeholder="e.g. Recursion, SQL Joins"
-                            style={{ width: "100%", background: V.card, border: `1px solid ${V.border}`, color: V.text, padding: "8px", borderRadius: "6px", marginTop: "4px" }} />
+                        <input type="text"
+                            value={formData.skillGaps.join(", ")}
+                            readOnly={readOnly}
+                            onChange={e => setFormData(prev => ({ ...prev, skillGaps: e.target.value.split(",").map(s => s.trim()).filter(Boolean) }))}
+                            placeholder="e.g. Recursion, SQL Joins"
+                            style={{ width: "100%", background: V.card, border: `1px solid ${V.border}`, color: V.text, padding: "8px", borderRadius: "6px", marginTop: "4px" }}
+                        />
                     </div>
                 </div>
 
@@ -161,7 +162,7 @@ export default function StudentDetailsModal({
                         fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
                         marginTop: "12px", cursor: "pointer", transition: "0.2s opacity", fontSize: "0.9rem"
                     }} onMouseOver={e => e.currentTarget.style.opacity = "0.9"} onMouseOut={e => e.currentTarget.style.opacity = "1"}>
-                        <Save size={18} /> Save & Sync Dashboard
+                        <Save size={18} /> Save & Sync Real-time
                     </button>
                 )}
             </div>

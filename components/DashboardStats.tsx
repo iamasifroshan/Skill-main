@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Users, TrendingDown, Award, AlertCircle, BookOpen, Target } from "lucide-react";
 import StudentDetailsModal from "./StudentDetailsModal";
+import { useStudentData } from "@/lib/hooks/useStudentData";
 
 /* ── Uses CSS vars from chrome.css for theme support ── */
 const V = {
@@ -56,28 +57,16 @@ export default function DashboardStats({ role }: { role: string }) {
     const { data: session } = useSession();
     const [isClient, setIsClient] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const [studentData, setStudentData] = useState({
-        gpa: "0.0",
-        skillReadiness: "0%",
-        attendance: "0%",
-        progress: "0%"
-    });
+
+    // Real-time student data
+    const { student, insights, loading } = useStudentData(session?.user?.email);
 
     useEffect(() => {
         setIsClient(true);
-        if (role === "STUDENT" && session?.user?.email) {
-            const saved = localStorage.getItem(`skillsync-student-data-${session.user.email}`);
-            if (saved) {
-                setStudentData(JSON.parse(saved));
-            }
-        }
-    }, [role, session]);
+    }, []);
 
     const handleSave = (data: any) => {
-        setStudentData(data);
-        if (session?.user?.email) {
-            localStorage.setItem(`skillsync-student-data-${session.user.email}`, JSON.stringify(data));
-        }
+        // This will be replaced by Firestore write in the future
     };
 
     const adminStats = [
@@ -95,15 +84,48 @@ export default function DashboardStats({ role }: { role: string }) {
     ];
 
     const studentStats = [
-        { label: "Academic GPA", value: studentData.gpa, trend: "+0.2", trendUp: true, icon: Award },
-        { label: "Skill Readiness", value: studentData.skillReadiness, trend: "+10%", trendUp: true, icon: Target },
-        { label: "Attendance", value: studentData.attendance, trend: "+2%", trendUp: true, icon: Users },
-        { label: "Course Progress", value: studentData.progress, trend: "+5%", trendUp: true, icon: BookOpen },
+        {
+            label: "Academic Standing",
+            value: insights ? `${Math.round(insights.percentile)}%` : "...",
+            trend: "Top Percentile",
+            trendUp: true,
+            icon: Award
+        },
+        {
+            label: "Skill Readiness",
+            value: student ? `${Math.round(student.subjects.reduce((a, b) => a + b.marks, 0) / student.subjects.length)}%` : "...",
+            trend: "+10%",
+            trendUp: true,
+            icon: Target
+        },
+        {
+            label: "Attendance",
+            value: student ? `${student.attendance}%` : "...",
+            trend: student && student.attendance > 85 ? "Healthy" : "Warning",
+            trendUp: student ? student.attendance > 85 : true,
+            icon: Users
+        },
+        {
+            label: "Risk Level",
+            value: insights ? insights.riskLevel : "...",
+            trend: insights ? `${insights.riskScore}% Score` : "Analysing",
+            trendUp: insights ? insights.riskLevel === "Low" : true,
+            icon: AlertCircle
+        },
     ];
 
     const stats = role === "ADMIN" ? adminStats : role === "FACULTY" ? facultyStats : studentStats;
 
-    // Use a placeholder grid for SSR to avoid layout shift, but we only show the interactive part on client side
+    if (loading && role === "STUDENT") {
+        return (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 28 }}>
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="skeleton-stats" style={{ height: "100px", background: V.card, borderRadius: 16, border: `1px solid ${V.border}` }}></div>
+                ))}
+            </div>
+        );
+    }
+
     return (
         <div style={{ position: "relative" }}>
             {isClient && role === "STUDENT" && (
@@ -114,13 +136,13 @@ export default function DashboardStats({ role }: { role: string }) {
                     display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", zIndex: 10,
                     transition: "0.2s"
                 }} onMouseOver={(e) => e.currentTarget.style.background = "rgba(212,255,0,0.12)"} onMouseOut={(e) => e.currentTarget.style.background = V.accentSoft}>
-                    <Award size={16} /> View Details
+                    <Award size={16} /> Update Real-time
                 </button>
             )}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 28 }}>
                 {stats.map((s, i) => <StatCard key={i} {...s} />)}
             </div>
-            {isClient && showModal && <StudentDetailsModal onClose={() => setShowModal(false)} onSave={handleSave} readOnly={true} studentName={session?.user?.name || ""} studentEmail={session?.user?.email || ""} />}
+            {isClient && showModal && <StudentDetailsModal onClose={() => setShowModal(false)} onSave={handleSave} readOnly={false} studentName={session?.user?.name || ""} studentEmail={session?.user?.email || ""} />}
         </div>
     );
 }

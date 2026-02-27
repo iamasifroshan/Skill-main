@@ -372,6 +372,21 @@
     font-weight: 600;
 }
 
+/* Chatbot scrollbar hide */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #d4ff00 0%, #a855f7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 /* Page content */
 .ds-page-content {
     flex: 1;

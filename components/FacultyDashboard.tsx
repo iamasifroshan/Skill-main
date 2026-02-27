@@ -17,6 +17,8 @@ import {
 import { getMaterials, saveMaterial, type Material } from "@/lib/materialsStore";
 import { getStudentsForFacultyByEmail, getAllocations } from "@/lib/allocationStore";
 import StudentDetailsModal from "./StudentDetailsModal";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, doc, updateDoc, writeBatch } from "firebase/firestore";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type SortKey = "name" | "roll" | "performance" | "attendance" | "risk";
@@ -98,64 +100,40 @@ export default function FacultyDashboard({ teacherName, teacherEmail }: { teache
     const [assignedIds, setAssignedIds] = useState<string[]>([]);
 
     useEffect(() => {
-        const fetchStudents = async () => {
-            try {
-                const res = await fetch("/api/students");
-                const data = await res.json();
-                if (Array.isArray(data)) setDbStudents(data);
-            } catch (err) {
-                console.error("Failed to fetch students:", err);
-            }
-        };
-        fetchStudents();
+        const unsub = onSnapshot(collection(db, "students"), (snap) => {
+            const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setDbStudents(students);
+        });
+        return () => unsub();
     }, []);
 
     useEffect(() => {
         const load = () => {
             const ids = teacherEmail
                 ? getStudentsForFacultyByEmail(teacherEmail)
-                : dbStudents.map(s => s.id);
+                : dbStudents.map((s: any) => s.id);
             setAssignedIds(ids);
         };
         load();
-        const t = setInterval(load, 3000);
-        return () => clearInterval(t);
     }, [teacherEmail, dbStudents]);
 
     const MY_STUDENTS = dbStudents
-        .filter(s => {
+        .filter((s: any) => {
             const isAssignedToMe = assignedIds.includes(s.id);
             const currentAllocations = getAllocations();
             const allAssignedIds = currentAllocations.flatMap((a: any) => a.studentIds);
             const isUnassigned = !allAssignedIds.includes(s.id);
             return isAssignedToMe || isUnassigned;
         })
-        .map(s => {
-            // Hydrate with local storage updates
-            const saved = typeof window !== "undefined" ? localStorage.getItem(`skillsync-student-data-${s.email}`) : null;
-            if (saved) {
-                try {
-                    const data = JSON.parse(saved);
-                    return {
-                        ...s,
-                        gpa: data.gpa || "0.0",
-                        performance: parseInt(data.gpa ? (parseFloat(data.gpa) * 9.5).toString() : "0") || (data.marks ? Math.round(data.marks.reduce((a: number, b: number) => a + b, 0) / 5) : 0),
-                        attendance: parseInt(data.attendance) || 0,
-                        skillReadiness: data.skillReadiness || "0%",
-                        progress: parseInt(data.progress) || 0,
-                        skillGaps: data.skillGaps || s.skillGaps || [],
-                        risk: (parseInt(data.attendance) < 75 || parseFloat(data.gpa) < 2.0) ? "High" : (parseFloat(data.gpa) < 3.0) ? "Medium" : "Low"
-                    };
-                } catch (e) { return s; }
-            }
+        .map((s: any) => {
+            const avg = s.subjects.reduce((a: any, b: any) => a + (b.marks || 0), 0) / (s.subjects.length || 1);
             return {
                 ...s,
-                gpa: "0.0",
-                performance: 0,
-                attendance: 0,
-                skillReadiness: "0%",
-                progress: 0,
-                risk: "Low" // default for new
+                roll: s.roll || "CSE000",
+                performance: Math.round(avg),
+                gpa: (avg / 10).toFixed(1),
+                risk: (s.attendance < 75 || avg < 60) ? "High" : avg < 75 ? "Medium" : "Low",
+                skillGaps: s.skillGaps || [],
             };
         });
 
@@ -259,7 +237,7 @@ export default function FacultyDashboard({ teacherName, teacherEmail }: { teache
         }
     };
 
-    const handleBulkAttendance = () => {
+    const handleBulkAttendance = async () => {
         const val = prompt("Enter attendance percentage for all students (0-100):");
         if (val === null) return;
         const att = parseInt(val);
@@ -268,13 +246,18 @@ export default function FacultyDashboard({ teacherName, teacherEmail }: { teache
             return;
         }
 
+        const batch = writeBatch(db);
         MY_STUDENTS.forEach(student => {
-            const saved = localStorage.getItem(`skillsync-student-data-${student.email}`);
-            const data = saved ? JSON.parse(saved) : { gpa: "0.0", skillReadiness: "0%", attendance: "0%", progress: "0%" };
-            data.attendance = `${att}%`;
-            localStorage.setItem(`skillsync-student-data-${student.email}`, JSON.stringify(data));
+            const studentRef = doc(db, "students", student.email);
+            batch.update(studentRef, { attendance: att });
         });
-        alert(`Attendance set to ${att}% for all ${MY_STUDENTS.length} students.`);
+
+        try {
+            await batch.commit();
+            alert(`Attendance set to ${att}% for all ${MY_STUDENTS.length} students in real-time.`);
+        } catch (e) {
+            console.error("Bulk update failed:", e);
+        }
     };
 
     return (

@@ -38,19 +38,29 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
 };
 
-export default function StudentAnalytics({ student }: { student: Student }) {
-    const rc = riskStyle[student.risk];
+import { useStudentData } from "@/lib/hooks/useStudentData";
+import { useSession } from "next-auth/react";
+
+export default function StudentAnalytics({ student: initialStudent }: { student?: any }) {
+    const { data: session } = useSession();
+    const { student, insights, loading } = useStudentData(initialStudent?.email || session?.user?.email);
+
+    if (loading) return <div className="skeleton-analytics">Loading real-time insights...</div>;
+    if (!student) return <div>No real-time data found. Please run migration.</div>;
+
+    const rc = riskStyle[insights.riskLevel];
     const classAvg = [72, 70, 75, 73, 68];
 
-    const marksData = student.subjects.map((s) => ({
+    const marksData = student.subjects.map((s: any) => ({
         subject: s.name.split(" ")[0],
         marks: s.marks,
         classAvg: classAvg[Math.floor(Math.random() * classAvg.length)],
         weak: s.marks < 60,
     }));
 
-    const trendData = student.weeklyTrend.map((w) => ({
-        ...w,
+    const trendData = student.testHistory.map((t: any) => ({
+        week: t.exam,
+        score: t.score,
         classAvg: 70,
     }));
 
@@ -76,7 +86,7 @@ export default function StudentAnalytics({ student }: { student: Student }) {
                 <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
                     {[
                         { label: "Attendance", value: `${student.attendance}%`, color: student.attendance >= 75 ? "#10b981" : "#ef4444" },
-                        { label: "Performance", value: `${student.performance}%`, color: student.performance >= 75 ? "#10b981" : student.performance >= 55 ? "#f59e0b" : "#ef4444" },
+                        { label: "Performance", value: `${Math.round(insights.avgMarks)}%`, color: insights.avgMarks >= 75 ? "#10b981" : insights.avgMarks >= 55 ? "#f59e0b" : "#ef4444" },
                     ].map((m) => (
                         <div key={m.label} style={{ textAlign: "center", padding: "12px 20px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.06)" }}>
                             <div style={{ fontSize: "1.5rem", fontWeight: 800, color: m.color }}>{m.value}</div>
@@ -84,8 +94,8 @@ export default function StudentAnalytics({ student }: { student: Student }) {
                         </div>
                     ))}
                     <div style={{ textAlign: "center", padding: "12px 20px", background: rc.bg, borderRadius: "12px", border: `1px solid ${rc.color}30` }}>
-                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: rc.color }}>{student.risk} Risk</div>
-                        <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>AI Risk Level</div>
+                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: rc.color }}>{insights.riskLevel} Risk</div>
+                        <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>AI Risk: {insights.riskScore}%</div>
                     </div>
                 </div>
             </div>
@@ -141,9 +151,9 @@ export default function StudentAnalytics({ student }: { student: Student }) {
             <div style={{ ...CARD, marginBottom: "24px" }}>
                 <h3 style={{ margin: "0 0 20px", fontWeight: 700, color: "white", fontSize: "1.05rem" }}>Detailed Subject Marks</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: "12px" }}>
-                    {student.subjects.map((sub) => {
+                    {student.subjects.map((sub: any) => {
                         const weak = sub.marks < 60;
-                        const pct = (sub.marks / sub.total) * 100;
+                        const pct = (sub.marks / 100) * 100;
                         return (
                             <div key={sub.name} style={{ padding: "16px", background: weak ? "rgba(239,68,68,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${weak ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.05)"}`, borderRadius: "12px" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
@@ -151,7 +161,7 @@ export default function StudentAnalytics({ student }: { student: Student }) {
                                     {weak && <AlertTriangle size={14} color="#ef4444" />}
                                 </div>
                                 <div style={{ fontSize: "1.4rem", fontWeight: 800, color: weak ? "#ef4444" : "#10b981" }}>
-                                    {sub.marks}<span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 500 }}>/{sub.total}</span>
+                                    {sub.marks}<span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 500 }}>/100</span>
                                 </div>
                                 <div style={{ height: 4, background: "rgba(255,255,255,0.05)", borderRadius: 2, marginTop: 10, overflow: "hidden" }}>
                                     <div style={{ width: `${pct}%`, height: "100%", background: weak ? "#ef4444" : "#10b981", borderRadius: 2 }} />
@@ -169,11 +179,11 @@ export default function StudentAnalytics({ student }: { student: Student }) {
                     <h3 style={{ margin: "0 0 16px", fontWeight: 700, color: "white", fontSize: "1.05rem", display: "flex", gap: "8px", alignItems: "center" }}>
                         <AlertTriangle size={18} color="#ef4444" /> Weak Areas & Skill Gaps
                     </h3>
-                    {student.weakSubjects.length > 0 && (
+                    {insights.weakSubjects.length > 0 && (
                         <>
                             <p style={{ color: "#64748b", fontSize: "0.8rem", marginBottom: "10px" }}>Weak Subjects</p>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px" }}>
-                                {student.weakSubjects.map((ws) => (
+                                {insights.weakSubjects.map((ws: string) => (
                                     <span key={ws} style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", padding: "4px 12px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: 700 }}>
                                         {ws}
                                     </span>
@@ -181,14 +191,14 @@ export default function StudentAnalytics({ student }: { student: Student }) {
                             </div>
                         </>
                     )}
-                    {student.weakSubjects.length === 0 && (
+                    {insights.weakSubjects.length === 0 && (
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#10b981" }}>
                             <CheckCircle size={16} /> No weak subjects — excellent performance!
                         </div>
                     )}
                     <p style={{ color: "#64748b", fontSize: "0.8rem", marginBottom: "10px" }}>Identified Skill Gaps</p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        {student.skillGaps.map((sg) => (
+                        {insights.skillGaps.map((sg: string) => (
                             <span key={sg} style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1", padding: "4px 12px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: 600 }}>
                                 {sg}
                             </span>
@@ -202,7 +212,11 @@ export default function StudentAnalytics({ student }: { student: Student }) {
                         <Brain size={18} color="#a855f7" /> AI Improvement Suggestions
                     </h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                        {student.suggestions.map((sug, i) => (
+                        {[
+                            insights.riskLevel === "High" ? "Immediate attention to weak subjects required." : "Maintain current trajectory.",
+                            insights.skillGaps.length > 0 ? `Focus on closing gaps in: ${insights.skillGaps.join(", ")}` : "Skills are well-aligned with industry.",
+                            "Review latest test feedback to identify conceptual gaps."
+                        ].map((sug, i) => (
                             <div key={i} style={{ display: "flex", gap: "12px", padding: "12px", background: "rgba(168,85,247,0.05)", borderRadius: "10px", border: "1px solid rgba(168,85,247,0.1)" }}>
                                 <div style={{ width: 24, height: 24, flexShrink: 0, borderRadius: "50%", background: "rgba(168,85,247,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 800, color: "#a855f7" }}>
                                     {i + 1}

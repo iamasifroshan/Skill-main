@@ -10,6 +10,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/components/ThemeProvider";
+import Chatbot from "@/components/Chatbot";
+import { useStudentData } from "@/lib/hooks/useStudentData";
 import "./chrome.css";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme, toggle } = useTheme();
 
   const role = (session?.user as any)?.role;
+  const { student } = useStudentData(session?.user?.email);
 
   const studentMenu = [
     { name: "Overview", icon: LayoutDashboard, href: "/dashboard" },
@@ -132,6 +135,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="ds-page-content">
           {children}
         </div>
+        {role === "STUDENT" && <Chatbot studentContext={student} />}
       </main>
     </div>
   );
