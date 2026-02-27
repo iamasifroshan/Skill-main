@@ -4,14 +4,35 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { GraduationCap, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { GraduationCap, Mail, Lock, ArrowRight, Loader2, User, BookOpen, Shield, ChevronDown } from "lucide-react";
+
+type Role = "STUDENT" | "FACULTY" | "ADMIN";
 
 export default function LoginPage() {
+  const [activeTab, setActiveTab] = useState<Role>("STUDENT");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showDemoDropdown, setShowDemoDropdown] = useState(false);
   const router = useRouter();
+
+  const handleDemoSelect = (role: Role) => {
+    switch (role) {
+      case "ADMIN":
+        setEmail("admin.admin@skillsync.com");
+        break;
+      case "FACULTY":
+        setEmail("faculty.faculty@skillsync.com");
+        break;
+      case "STUDENT":
+        setEmail("student.student@skillsync.com");
+        break;
+    }
+    setPassword("password123");
+    setActiveTab(role);
+    setShowDemoDropdown(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +53,15 @@ export default function LoginPage() {
         const res = await fetch("/api/auth/session");
         const session = await res.json();
         const role = session?.user?.role;
-        if (role === "ADMIN") {
+
+        let determinedRole = role;
+        if (!determinedRole) {
+          if (email.startsWith("admin.")) determinedRole = "ADMIN";
+          else if (email.startsWith("faculty.")) determinedRole = "FACULTY";
+          else determinedRole = "STUDENT";
+        }
+
+        if (determinedRole === "ADMIN") {
           router.push("/dashboard/admin");
         } else {
           router.push("/dashboard");
@@ -46,11 +75,9 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      {/* Decorative grid */}
       <div className="login-grid-bg" aria-hidden="true" />
       <div className="login-glow" aria-hidden="true" />
 
-      {/* Back to home */}
       <Link href="/" className="login-back">
         <GraduationCap size={16} />
         SkillSync
@@ -63,6 +90,30 @@ export default function LoginPage() {
           </div>
           <h1>Welcome back</h1>
           <p>Sign in to your SkillSync account</p>
+        </div>
+
+        <div className="role-tabs">
+          <button
+            type="button"
+            className={`role-tab ${activeTab === 'STUDENT' ? 'active' : ''}`}
+            onClick={() => setActiveTab('STUDENT')}
+          >
+            <User size={16} /> Student
+          </button>
+          <button
+            type="button"
+            className={`role-tab ${activeTab === 'FACULTY' ? 'active' : ''}`}
+            onClick={() => setActiveTab('FACULTY')}
+          >
+            <BookOpen size={16} /> Faculty
+          </button>
+          <button
+            type="button"
+            className={`role-tab ${activeTab === 'ADMIN' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ADMIN')}
+          >
+            <Shield size={16} /> Admin
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
@@ -113,31 +164,42 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="login-credentials">
-          <span className="login-credentials-title">Support Roles</span>
-          <div className="login-cred-row">
-            <span className="login-cred-role">Admin</span>
-            <code>admin.admin@skillsync.com</code>
-          </div>
-          <div className="login-cred-row">
-            <span className="login-cred-role">Faculty</span>
-            <code>faculty.faculty@skillsync.com</code>
-          </div>
-          <div className="login-cred-row">
-            <span className="login-cred-role">Student</span>
-            <code>student.student@skillsync.com</code>
-          </div>
-          <div className="login-cred-pw" style={{ marginTop: "12px", color: "#3b82f6", fontWeight: 700, fontSize: "0.75rem" }}>
-            NOTE: You must use an Admin account to create new users.
-          </div>
-          <div className="login-cred-pw">
-            Password for all: <code>password123</code>
-          </div>
+        <div className="demo-dropdown-container">
+          <button
+            type="button"
+            className="demo-dropdown-toggle"
+            onClick={() => setShowDemoDropdown(!showDemoDropdown)}
+          >
+            Fill Demo Credentials <ChevronDown size={14} style={{ transform: showDemoDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+
+          {showDemoDropdown && (
+            <div className="demo-dropdown-menu">
+              <button type="button" onClick={() => handleDemoSelect('ADMIN')} className="demo-option border-b">
+                <Shield size={14} className="text-blue-500" />
+                <div>
+                  <div className="demo-role">Admin Account</div>
+                  <div className="demo-email">admin.admin@skillsync.com</div>
+                </div>
+              </button>
+              <button type="button" onClick={() => handleDemoSelect('FACULTY')} className="demo-option border-b">
+                <BookOpen size={14} className="text-emerald-500" />
+                <div>
+                  <div className="demo-role">Faculty Account</div>
+                  <div className="demo-email">faculty.faculty@skillsync.com</div>
+                </div>
+              </button>
+              <button type="button" onClick={() => handleDemoSelect('STUDENT')} className="demo-option">
+                <User size={14} className="text-amber-500" />
+                <div>
+                  <div className="demo-role">Student Account</div>
+                  <div className="demo-email">student.student@skillsync.com</div>
+                </div>
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="login-signup-prompt" style={{ marginTop: "24px", textAlign: "center", fontSize: "0.88rem" }}>
-          <span style={{ color: "#6b6b6b" }}>Registration is limited to administrators only.</span>
-        </div>
       </div>
 
       <style jsx>{`
@@ -209,7 +271,7 @@ export default function LoginPage() {
 
                 .login-header {
                     text-align: center;
-                    margin-bottom: 32px;
+                    margin-bottom: 24px;
                 }
 
                 .login-logo-mark {
@@ -238,6 +300,43 @@ export default function LoginPage() {
                 .login-header p {
                     font-size: 0.88rem;
                     color: #6b6b6b;
+                }
+                
+                .role-tabs {
+                    display: flex;
+                    gap: 8px;
+                    background: rgba(255, 255, 255, 0.04);
+                    padding: 6px;
+                    border-radius: 12px;
+                    margin-bottom: 24px;
+                    border: 1px solid rgba(255,255,255,0.05);
+                }
+                
+                .role-tab {
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    padding: 10px 0;
+                    background: transparent;
+                    border: none;
+                    border-radius: 8px;
+                    color: #6b6b6b;
+                    font-size: 0.8rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .role-tab:hover {
+                    color: #fff;
+                }
+                
+                .role-tab.active {
+                    background: #3b82f6;
+                    color: #fff;
+                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
                 }
 
                 .login-form {
@@ -325,6 +424,83 @@ export default function LoginPage() {
                     cursor: not-allowed;
                     transform: none;
                 }
+                
+                .demo-dropdown-container {
+                    margin-top: 24px;
+                    position: relative;
+                }
+                
+                .demo-dropdown-toggle {
+                    width: 100%;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px dashed rgba(255,255,255,0.1);
+                    color: #9ca3af;
+                    padding: 12px;
+                    border-radius: 10px;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .demo-dropdown-toggle:hover {
+                    background: rgba(255,255,255,0.06);
+                    color: #fff;
+                }
+                
+                .demo-dropdown-menu {
+                    position: absolute;
+                    top: calc(100% + 8px);
+                    left: 0;
+                    right: 0;
+                    background: #111;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 10px;
+                    overflow: hidden;
+                    z-index: 10;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                }
+                
+                .demo-option {
+                    width: 100%;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px 16px;
+                    background: transparent;
+                    border: none;
+                    text-align: left;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                }
+                
+                .demo-option:hover {
+                    background: rgba(255,255,255,0.05);
+                }
+                
+                .demo-option.border-b {
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                }
+                
+                .demo-role {
+                    font-size: 0.8rem;
+                    font-weight: 700;
+                    color: #fff;
+                }
+                
+                .demo-email {
+                    font-size: 0.7rem;
+                    color: #6b6b6b;
+                    font-family: monospace;
+                    margin-top: 2px;
+                }
+                
+                .text-blue-500 { color: #3b82f6; }
+                .text-emerald-500 { color: #10b981; }
+                .text-amber-500 { color: #f59e0b; }
 
                 .spin {
                     animation: spinner 0.8s linear infinite;
@@ -333,56 +509,6 @@ export default function LoginPage() {
                 @keyframes spinner {
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
-                }
-
-                .login-credentials {
-                    margin-top: 28px;
-                    padding-top: 20px;
-                    border-top: 1px solid rgba(255, 255, 255, 0.06);
-                }
-
-                .login-credentials-title {
-                    display: block;
-                    font-size: 0.68rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.12em;
-                    color: #6b6b6b;
-                    margin-bottom: 12px;
-                }
-
-                .login-cred-row {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    margin-bottom: 6px;
-                    font-size: 0.8rem;
-                }
-
-                .login-cred-role {
-                    font-weight: 700;
-                    color: #3b82f6;
-                    width: 56px;
-                    font-size: 0.7rem;
-                    text-transform: uppercase;
-                    letter-spacing: 0.06em;
-                }
-
-                .login-cred-row code {
-                    color: rgba(255, 255, 255, 0.5);
-                    font-family: var(--font-body, 'Space Grotesk', monospace);
-                    font-size: 0.78rem;
-                }
-
-                .login-cred-pw {
-                    margin-top: 10px;
-                    font-size: 0.75rem;
-                    color: #3a3a3a;
-                }
-
-                .login-cred-pw code {
-                    color: rgba(255, 255, 255, 0.35);
-                    font-family: var(--font-body, 'Space Grotesk', monospace);
                 }
             `}</style>
     </div>

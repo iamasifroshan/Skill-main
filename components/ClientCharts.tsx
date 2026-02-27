@@ -48,11 +48,11 @@ export default function ClientCharts({ type, data, dataKey, dataKey2, colors }: 
                     />
                     <Tooltip
                         contentStyle={{
-                            backgroundColor: '#111114',
-                            border: '1px solid rgba(255,255,255,0.1)',
+                            backgroundColor: 'var(--ds-surface)',
+                            border: '1px solid var(--ds-border)',
                             borderRadius: '8px'
                         }}
-                        itemStyle={{ color: '#fff' }}
+                        itemStyle={{ color: 'var(--ds-text)' }}
                     />
                     <Area
                         type="monotone"
@@ -98,10 +98,11 @@ export default function ClientCharts({ type, data, dataKey, dataKey2, colors }: 
                 />
                 <Tooltip
                     contentStyle={{
-                        backgroundColor: '#111114',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        backgroundColor: 'var(--ds-surface)',
+                        border: '1px solid var(--ds-border)',
                         borderRadius: '8px'
                     }}
+                    itemStyle={{ color: 'var(--ds-text)' }}
                 />
                 <Bar dataKey={dataKey} fill={colors[0]} radius={[0, 4, 4, 0]} barSize={12} />
                 {dataKey2 && (

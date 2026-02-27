@@ -4,8 +4,20 @@ import { useState, useRef } from "react";
 import { Upload, FileText, X, CheckCircle, Plus } from "lucide-react";
 import { saveMaterial, type Material } from "@/lib/materialsStore";
 
-
 const CLASSES = ["CSE-A (Year 2)", "CSE-B (Year 2)", "CSE-A (Year 3)", "All Classes"];
+
+const V = {
+    card: "var(--ds-card, #ffffff)",
+    border: "var(--ds-border, #e2e8f0)",
+    text: "var(--ds-text, #020617)",
+    dim: "var(--ds-text-dim, #334155)",
+    muted: "var(--ds-text-muted, #475569)",
+    accent: "var(--ds-accent)",
+    accentSoft: "var(--ds-accent-soft)",
+    accentBorder: "var(--ds-accent-border)",
+    hover: "var(--ds-hover)",
+    surface: "var(--ds-surface)",
+};
 
 export default function MaterialUpload({ onUploaded }: { onUploaded?: (m: Material) => void }) {
     const [title, setTitle] = useState("");
@@ -87,19 +99,19 @@ export default function MaterialUpload({ onUploaded }: { onUploaded?: (m: Materi
                 {/* Left — fields */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div>
-                        <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 700, color: V.muted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>
                             Title *
                         </label>
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="e.g., Week 3 - Data Structures Notes"
-                            style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "12px 16px", color: "white", fontSize: "0.9rem", outline: "none" }}
+                            style={{ width: "100%", background: V.surface, border: `1px solid ${V.border}`, borderRadius: "10px", padding: "12px 16px", color: V.text, fontSize: "0.9rem", outline: "none" }}
                         />
                     </div>
 
                     <div>
-                        <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 700, color: V.muted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>
                             Description
                         </label>
                         <textarea
@@ -107,27 +119,27 @@ export default function MaterialUpload({ onUploaded }: { onUploaded?: (m: Materi
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Brief description of this material..."
                             rows={4}
-                            style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "12px 16px", color: "white", fontSize: "0.9rem", outline: "none", resize: "vertical", fontFamily: "inherit" }}
+                            style={{ width: "100%", background: V.surface, border: `1px solid ${V.border}`, borderRadius: "10px", padding: "12px 16px", color: V.text, fontSize: "0.9rem", outline: "none", resize: "vertical", fontFamily: "inherit" }}
                         />
                     </div>
 
                     <div>
-                        <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 700, color: V.muted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>
                             Assign to Class
                         </label>
                         <select
                             value={assignedClass}
                             onChange={(e) => setAssignedClass(e.target.value)}
-                            style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "10px", padding: "12px 16px", color: "white", fontSize: "0.9rem", outline: "none" }}
+                            style={{ width: "100%", background: V.surface, border: `1px solid ${V.border}`, borderRadius: "10px", padding: "12px 16px", color: V.text, fontSize: "0.9rem", outline: "none" }}
                         >
-                            {CLASSES.map((c) => <option key={c} value={c} style={{ background: "#1a1a2e" }}>{c}</option>)}
+                            {CLASSES.map((c) => <option key={c} value={c} style={{ background: V.surface }}>{c}</option>)}
                         </select>
                     </div>
                 </div>
 
                 {/* Right — dropzone */}
                 <div>
-                    <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>
+                    <label style={{ fontSize: "0.8rem", fontWeight: 700, color: V.muted, textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "8px" }}>
                         Upload File * (PDF, DOC, PPT)
                     </label>
                     <div
@@ -135,12 +147,12 @@ export default function MaterialUpload({ onUploaded }: { onUploaded?: (m: Materi
                         onDragOver={(e) => e.preventDefault()}
                         onClick={() => fileRef.current?.click()}
                         style={{
-                            border: `2px dashed ${file ? "#10b981" : "rgba(255,255,255,0.12)"}`,
+                            border: `2px dashed ${file ? "#10b981" : V.border}`,
                             borderRadius: "14px",
                             padding: "40px 20px",
                             textAlign: "center",
                             cursor: "pointer",
-                            background: file ? "rgba(16,185,129,0.05)" : "rgba(255,255,255,0.02)",
+                            background: file ? "rgba(16,185,129,0.05)" : V.hover,
                             transition: "all 0.2s",
                             minHeight: "200px",
                             display: "flex",
@@ -153,8 +165,8 @@ export default function MaterialUpload({ onUploaded }: { onUploaded?: (m: Materi
                         {file ? (
                             <>
                                 <div style={{ fontSize: "2rem" }}>{extIcon[file.name.split(".").pop()?.toUpperCase() || ""] || "📁"}</div>
-                                <div style={{ fontWeight: 700, color: "white", fontSize: "0.95rem" }}>{file.name}</div>
-                                <div style={{ fontSize: "0.8rem", color: "#64748b" }}>{(file.size / 1024).toFixed(1)} KB</div>
+                                <div style={{ fontWeight: 700, color: V.text, fontSize: "0.95rem" }}>{file.name}</div>
+                                <div style={{ fontSize: "0.8rem", color: V.dim }}>{(file.size / 1024).toFixed(1)} KB</div>
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); setFile(null); }}
@@ -165,12 +177,12 @@ export default function MaterialUpload({ onUploaded }: { onUploaded?: (m: Materi
                             </>
                         ) : (
                             <>
-                                <div style={{ width: 56, height: 56, borderRadius: "14px", background: "rgba(99,102,241,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <Upload size={24} color="#6366f1" />
+                                <div style={{ width: 56, height: 56, borderRadius: "14px", background: V.accentSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <Upload size={24} color={V.accent} />
                                 </div>
                                 <div>
-                                    <p style={{ color: "white", fontWeight: 600, marginBottom: "4px" }}>Drag & Drop or Click to Upload</p>
-                                    <p style={{ color: "#64748b", fontSize: "0.8rem" }}>Supports PDF, DOC, DOCX, PPT, PPTX</p>
+                                    <p style={{ color: V.text, fontWeight: 700, marginBottom: "4px" }}>Drag & Drop or Click to Upload</p>
+                                    <p style={{ color: V.dim, fontSize: "0.8rem" }}>Supports PDF, DOC, DOCX, PPT, PPTX</p>
                                 </div>
                             </>
                         )}
@@ -185,7 +197,7 @@ export default function MaterialUpload({ onUploaded }: { onUploaded?: (m: Materi
                 style={{
                     marginTop: "28px",
                     padding: "14px 32px",
-                    background: uploading ? "rgba(99,102,241,0.4)" : "linear-gradient(135deg,#6366f1,#a855f7)",
+                    background: uploading ? V.accentSoft : V.accent,
                     border: "none",
                     borderRadius: "12px",
                     color: "white",

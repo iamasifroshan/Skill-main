@@ -124,40 +124,7 @@ export default function AdminOverview({ adminName }: { adminName: string }) {
             </div>
 
             {/* Charts */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 280px", gap: 16 }}>
-                {/* Retention */}
-                <div style={CARD}>
-                    <h3 style={{ fontFamily: FONT_H, fontWeight: 800, color: V.text, fontSize: "0.92rem", margin: "0 0 4px", letterSpacing: "-0.02em" }}>Retention Trend</h3>
-                    <p style={{ fontSize: "0.72rem", color: V.muted, marginBottom: 16 }}>Semester-wise retention & dropout rates</p>
-                    <ResponsiveContainer width="100%" height={210}>
-                        <LineChart data={RETENTION_TREND} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                            <XAxis dataKey="sem" tick={{ fill: V.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                            <YAxis domain={[75, 100]} tick={{ fill: V.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                            <Tooltip {...TT} />
-                            <Legend wrapperStyle={{ fontSize: "0.7rem", color: V.dim }} />
-                            <Line type="monotone" dataKey="rate" name="Retention %" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: "#3b82f6" }} />
-                            <Line type="monotone" dataKey="dropout" name="Dropout %" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Dept Performance */}
-                <div style={CARD}>
-                    <h3 style={{ fontFamily: FONT_H, fontWeight: 800, color: V.text, fontSize: "0.92rem", margin: "0 0 4px", letterSpacing: "-0.02em" }}>Department Performance</h3>
-                    <p style={{ fontSize: "0.72rem", color: V.muted, marginBottom: 16 }}>Average marks per department</p>
-                    <ResponsiveContainer width="100%" height={210}>
-                        <BarChart data={DEPT_PERF} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                            <XAxis dataKey="dept" tick={{ fill: V.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                            <YAxis domain={[0, 100]} tick={{ fill: V.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                            <Tooltip {...TT} />
-                            <Bar dataKey="avg" name="Avg %" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={18} />
-                            <Bar dataKey="retention" name="Retention %" fill="#cbd5e1" radius={[4, 4, 0, 0]} barSize={18} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
+            <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 16 }}>
                 {/* Risk Donut */}
                 <div style={CARD}>
                     <h3 style={{ fontFamily: FONT_H, fontWeight: 800, color: V.text, fontSize: "0.92rem", margin: "0 0 14px", letterSpacing: "-0.02em" }}>Risk Distribution</h3>

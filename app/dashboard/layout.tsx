@@ -67,7 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const adminMenu: NavItem[] = [
     { name: "Overview", icon: LayoutDashboard, href: "/dashboard/admin" },
     { name: "Analytics", icon: BarChart2, href: "/dashboard/admin/analytics" },
-    { name: "Retention Reports", icon: TrendingUp, href: "/dashboard/admin/analytics" },
+    { name: "Retention Reports", icon: TrendingUp, href: "/dashboard/admin/retention" },
     { name: "Curriculum Align", icon: GraduationCap, href: "/dashboard/admin/curriculum" },
     { name: "Student Allocation", icon: UserCheck, href: "/dashboard/admin/allocation" },
     { name: "User Management", icon: Shield, href: "/dashboard/admin/users" },

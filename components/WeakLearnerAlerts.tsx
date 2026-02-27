@@ -12,21 +12,20 @@ export default function WeakLearnerAlerts() {
     <div style={{
       padding: "24px",
       marginTop: "24px",
-      background: "rgba(23,23,26,0.7)",
-      backdropFilter: "blur(12px)",
-      border: "1px solid rgba(255,255,255,0.1)",
+      background: "var(--ds-card, #ffffff)",
+      border: "1px solid var(--ds-border)",
       borderRadius: "16px",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+      <div style={{ display: "flex", justifyItems: "stretch", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <AlertTriangle color="#ef4444" size={20} />
-          <h4 style={{ fontSize: "1.1rem", fontWeight: 700, color: "white", margin: 0 }}>
+          <h4 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--ds-text)", margin: 0 }}>
             Early Intervention Alerts
           </h4>
         </div>
         <span style={{
           background: "rgba(239,68,68,0.1)",
-          color: "#f87171",
+          color: "#ef4444",
           padding: "4px 10px",
           borderRadius: "20px",
           fontSize: "0.75rem",
@@ -43,41 +42,41 @@ export default function WeakLearnerAlerts() {
             alignItems: "center",
             justifyContent: "space-between",
             padding: "16px",
-            background: "rgba(255,255,255,0.03)",
+            background: "var(--ds-hover)",
             borderRadius: "12px",
-            border: "1px solid rgba(255,255,255,0.05)",
+            border: "1px solid var(--ds-border)",
             flexWrap: "wrap",
             gap: "16px",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "160px" }}>
               <div style={{
                 width: "36px", height: "36px", borderRadius: "50%",
-                background: "#6366f1", display: "flex", alignItems: "center",
+                background: "var(--ds-accent-soft)", color: "var(--ds-accent)", display: "flex", alignItems: "center",
                 justifyContent: "center", fontWeight: 700, fontSize: "0.9rem", flexShrink: 0,
               }}>
                 {alert.name[0]}
               </div>
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "white" }}>{alert.name}</span>
-                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{alert.email}</span>
+                <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--ds-text)" }}>{alert.name}</span>
+                <span style={{ fontSize: "0.75rem", color: "var(--ds-text-dim)" }}>{alert.email}</span>
               </div>
             </div>
 
             <div style={{ display: "flex", gap: "32px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "0.7rem", color: "#94a3b8", textTransform: "uppercase", fontWeight: 700 }}>Grade</span>
-                <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "#f87171" }}>{alert.grade}</span>
+                <span style={{ fontSize: "0.7rem", color: "var(--ds-text-muted)", textTransform: "uppercase", fontWeight: 700 }}>Grade</span>
+                <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "#ef4444" }}>{alert.grade}</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "0.7rem", color: "#94a3b8", textTransform: "uppercase", fontWeight: 700 }}>Attendance</span>
-                <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "white" }}>{alert.attendance}</span>
+                <span style={{ fontSize: "0.7rem", color: "var(--ds-text-muted)", textTransform: "uppercase", fontWeight: 700 }}>Attendance</span>
+                <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--ds-text)" }}>{alert.attendance}</span>
               </div>
             </div>
 
             <button style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "white", padding: "8px 16px", borderRadius: "8px",
+              background: "var(--ds-surface)",
+              border: "1px solid var(--ds-border)",
+              color: "var(--ds-text)", padding: "8px 16px", borderRadius: "8px",
               fontSize: "0.85rem", fontWeight: 600, display: "flex",
               alignItems: "center", gap: "8px", cursor: "pointer",
             }}>
