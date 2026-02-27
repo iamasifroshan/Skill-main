@@ -218,7 +218,7 @@ export default function FacultyDashboard({ teacherName, teacherEmail }: { teache
         }
 
         try {
-            const studentRef = doc(db, "students", student.email);
+            const studentRef = doc(db, "users", student.id);
             await updateDoc(studentRef, { attendance: att });
             alert(`Attendance for ${student.name} updated to ${att}% successfully!`);
         } catch (e) {

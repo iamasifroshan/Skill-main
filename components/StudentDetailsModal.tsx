@@ -38,7 +38,7 @@ export default function StudentDetailsModal({ onClose, onSave, readOnly = false,
     useEffect(() => {
         if (!studentEmail) return;
         const fetch = async () => {
-            const docRef = doc(db, "students", studentEmail);
+            const docRef = doc(db, "users", studentEmail);
             const snap = await getDoc(docRef);
             if (snap.exists()) {
                 const s = snap.data();
