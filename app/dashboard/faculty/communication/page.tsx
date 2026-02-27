@@ -3,9 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Bell, Send, User, Search, CheckCircle2 } from "lucide-react";
-import { getStudentsForFacultyByEmail, getAllocations } from "@/lib/allocationStore";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, addDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, query, orderBy, serverTimestamp, where } from "firebase/firestore";
 
 interface MessageData {
     id: string;
@@ -44,30 +43,23 @@ export default function CommunicationPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const unsub = onSnapshot(collection(db, "students"), (snap) => {
+        if (!teacherEmail) return;
+
+        const q = query(
+            collection(db, "users"),
+            where("role", "==", "STUDENT"),
+            where("assignedFacultyIds", "array-contains", teacherEmail)
+        );
+
+        const unsub = onSnapshot(q, (snap) => {
             const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             setDbStudents(students);
         });
+
         return () => unsub();
-    }, []);
+    }, [teacherEmail]);
 
-    useEffect(() => {
-        const load = () => {
-            const ids = teacherEmail
-                ? getStudentsForFacultyByEmail(teacherEmail)
-                : dbStudents.map((s: any) => s.id);
-            setAssignedIds(ids);
-        };
-        load();
-    }, [teacherEmail, dbStudents]);
-
-    const MY_STUDENTS = dbStudents.filter((s: any) => {
-        const isAssignedToMe = assignedIds.includes(s.id);
-        const currentAllocations = getAllocations();
-        const allAssignedIds = currentAllocations.flatMap((a: any) => a.studentIds);
-        const isUnassigned = !allAssignedIds.includes(s.id);
-        return isAssignedToMe || isUnassigned;
-    });
+    const MY_STUDENTS = dbStudents;
 
     const filteredStudents = MY_STUDENTS.filter(s =>
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -189,7 +181,7 @@ export default function CommunicationPage() {
                                 </div>
                                 <div style={{ flex: 1, overflow: "hidden" }}>
                                     <div style={{ fontWeight: 700, color: selectedStudent?.id === s.id ? V.accent : V.text, fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
-                                    <div style={{ fontSize: "0.75rem", color: V.dim }}>{s.roll || "CSE000"}</div>
+                                    <div style={{ fontSize: "0.75rem", color: V.dim }}>{s.registerNumber || s.roll || "REG000"}</div>
                                 </div>
                             </div>
                         ))}

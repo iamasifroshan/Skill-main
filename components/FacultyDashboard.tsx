@@ -9,10 +9,9 @@ import {
 } from "lucide-react";
 
 import { getMaterials, saveMaterial, type Material } from "@/lib/materialsStore";
-import { getStudentsForFacultyByEmail, getAllocations } from "@/lib/allocationStore";
 import StudentDetailsModal from "./StudentDetailsModal";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, where, doc, updateDoc } from "firebase/firestore";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type SortKey = "name" | "roll" | "performance" | "attendance" | "risk";
@@ -74,39 +73,33 @@ function SectionTitle({ icon: Icon, label, sub }: { icon: any; color?: string; l
 export default function FacultyDashboard({ teacherName, teacherEmail }: { teacherName: string; teacherEmail?: string }) {
     // ── allocation: only show assigned students
     const [dbStudents, setDbStudents] = useState<any[]>([]);
-    const [assignedIds, setAssignedIds] = useState<string[]>([]);
 
     useEffect(() => {
-        const unsub = onSnapshot(collection(db, "students"), (snap) => {
+        if (!teacherEmail) return;
+
+        // Fetch students whose assignedFacultyIds array contains the current faculty's email
+        const q = query(
+            collection(db, "users"),
+            where("role", "==", "STUDENT"),
+            where("assignedFacultyIds", "array-contains", teacherEmail)
+        );
+
+        const unsub = onSnapshot(q, (snap) => {
             const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             setDbStudents(students);
         });
-        return () => unsub();
-    }, []);
 
-    useEffect(() => {
-        const load = () => {
-            const ids = teacherEmail
-                ? getStudentsForFacultyByEmail(teacherEmail)
-                : dbStudents.map((s: any) => s.id);
-            setAssignedIds(ids);
-        };
-        load();
-    }, [teacherEmail, dbStudents]);
+        return () => unsub();
+    }, [teacherEmail]);
 
     const MY_STUDENTS = dbStudents
-        .filter((s: any) => {
-            const isAssignedToMe = assignedIds.includes(s.id);
-            const currentAllocations = getAllocations();
-            const allAssignedIds = currentAllocations.flatMap((a: any) => a.studentIds);
-            const isUnassigned = !allAssignedIds.includes(s.id);
-            return isAssignedToMe || isUnassigned;
-        })
         .map((s: any) => {
-            const avg = s.subjects.reduce((a: any, b: any) => a + (b.marks || 0), 0) / (s.subjects.length || 1);
+            // Mock subjects since we only seeded user accounts right now, 
+            // the full structure comes later.
+            const avg = s.subjects ? s.subjects.reduce((a: any, b: any) => a + (b.marks || 0), 0) / (s.subjects.length || 1) : 0;
             return {
                 ...s,
-                roll: s.roll || "CSE000",
+                roll: s.registerNumber || s.roll || "REG000",
                 performance: Math.round(avg),
                 gpa: (avg / 10).toFixed(1),
                 risk: (s.attendance < 75 || avg < 60) ? "High" : avg < 75 ? "Medium" : "Low",
@@ -127,7 +120,7 @@ export default function FacultyDashboard({ teacherName, teacherEmail }: { teache
     ];
 
     // ── student table state
-    const [query, setQuery] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
     const [riskFilter, setRiskFilter] = useState("All");
     const [sortKey, setSortKey] = useState<SortKey>("roll");
     const [sortAsc, setSortAsc] = useState(true);
@@ -135,8 +128,8 @@ export default function FacultyDashboard({ teacherName, teacherEmail }: { teache
     const filtered = MY_STUDENTS
         .filter(s =>
             (riskFilter === "All" || s.risk === riskFilter) &&
-            (s.name.toLowerCase().includes(query.toLowerCase()) ||
-                s.roll.toLowerCase().includes(query.toLowerCase()))
+            (s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                s.roll.toLowerCase().includes(searchQuery.toLowerCase()))
         )
         .sort((a, b) => {
             const av = a[sortKey] ?? "", bv = b[sortKey] ?? "";
@@ -285,7 +278,7 @@ export default function FacultyDashboard({ teacherName, teacherEmail }: { teache
                 <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: 200, display: "flex", alignItems: "center", gap: 10, background: V.searchBg, borderRadius: 10, padding: "0 14px", border: `1px solid ${V.border}`, transition: "border-color 0.2s, background 0.3s" }}>
                         <Search size={15} color={V.muted} />
-                        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by name or roll…"
+                        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by name or roll…"
                             style={{ background: "none", border: "none", color: V.text, outline: "none", padding: "11px 0", width: "100%", fontSize: "0.88rem", fontFamily: "inherit" }} />
                     </div>
                     {["All", "Low", "Medium", "High"].map(r => (

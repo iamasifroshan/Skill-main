@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { AlertTriangle, Brain } from "lucide-react";
-import { getStudentsForFacultyByEmail, getAllocations } from "@/lib/allocationStore";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import StudentDetailsModal from "@/components/StudentDetailsModal";
 
 const V = {
@@ -46,40 +45,31 @@ export default function RiskMonitoringPage() {
     const teacherEmail = session?.user?.email;
 
     const [dbStudents, setDbStudents] = useState<any[]>([]);
-    const [assignedIds, setAssignedIds] = useState<string[]>([]);
 
     const [showModal, setShowModal] = useState(false);
     const [isViewOnly, setIsViewOnly] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
     useEffect(() => {
-        const unsub = onSnapshot(collection(db, "students"), (snap) => {
+        if (!teacherEmail) return;
+
+        const q = query(
+            collection(db, "users"),
+            where("role", "==", "STUDENT"),
+            where("assignedFacultyIds", "array-contains", teacherEmail)
+        );
+
+        const unsub = onSnapshot(q, (snap) => {
             const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             setDbStudents(students);
         });
-        return () => unsub();
-    }, []);
 
-    useEffect(() => {
-        const load = () => {
-            const ids = teacherEmail
-                ? getStudentsForFacultyByEmail(teacherEmail)
-                : dbStudents.map((s: any) => s.id);
-            setAssignedIds(ids);
-        };
-        load();
-    }, [teacherEmail, dbStudents]);
+        return () => unsub();
+    }, [teacherEmail]);
 
     const MY_STUDENTS = dbStudents
-        .filter((s: any) => {
-            const isAssignedToMe = assignedIds.includes(s.id);
-            const currentAllocations = getAllocations();
-            const allAssignedIds = currentAllocations.flatMap((a: any) => a.studentIds);
-            const isUnassigned = !allAssignedIds.includes(s.id);
-            return isAssignedToMe || isUnassigned;
-        })
         .map((s: any) => {
-            const avg = s.subjects.reduce((a: any, b: any) => a + (b.marks || 0), 0) / (s.subjects.length || 1);
+            const avg = s.subjects ? s.subjects.reduce((a: any, b: any) => a + (b.marks || 0), 0) / (s.subjects.length || 1) : 0;
             return {
                 ...s,
                 performance: Math.round(avg),

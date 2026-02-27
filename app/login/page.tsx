@@ -121,14 +121,14 @@ export default function LoginPage() {
           </div>
           <div className="login-cred-row">
             <span className="login-cred-role">Faculty</span>
-            <code>sarahsmith.faculty@skillsync.com</code>
+            <code>faculty.faculty@skillsync.com</code>
           </div>
           <div className="login-cred-row">
             <span className="login-cred-role">Student</span>
-            <code>aaravsharma.student@skillsync.com</code>
+            <code>student.student@skillsync.com</code>
           </div>
           <div className="login-cred-pw" style={{ marginTop: "12px", color: "#3b82f6", fontWeight: 700, fontSize: "0.75rem" }}>
-            NOTE: All faculty and student emails from the system now work!
+            NOTE: You must use an Admin account to create new users.
           </div>
           <div className="login-cred-pw">
             Password for all: <code>password123</code>
@@ -136,10 +136,7 @@ export default function LoginPage() {
         </div>
 
         <div className="login-signup-prompt" style={{ marginTop: "24px", textAlign: "center", fontSize: "0.88rem" }}>
-          <span style={{ color: "#6b6b6b" }}>Don't have an account? </span>
-          <Link href="/register" style={{ color: "#3b82f6", fontWeight: 700, textDecoration: "none" }}>
-            Create one
-          </Link>
+          <span style={{ color: "#6b6b6b" }}>Registration is limited to administrators only.</span>
         </div>
       </div>
 

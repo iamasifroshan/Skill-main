@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { doc, onSnapshot, collection, query, getDocs } from "firebase/firestore";
+import { doc, onSnapshot, collection, query, getDocs, where } from "firebase/firestore";
 import { calculateAIInsights, StudentData } from "@/lib/aiEngine";
 
 export const useStudentData = (email: string | null | undefined) => {
@@ -16,7 +16,7 @@ export const useStudentData = (email: string | null | undefined) => {
 
         // 1. Fetch all students once for percentile calculation (could be optimized)
         const fetchAll = async () => {
-            const q = query(collection(db, "students"));
+            const q = query(collection(db, "users"), where("role", "==", "STUDENT"));
             const snap = await getDocs(q);
             const students = snap.docs.map(d => ({ id: d.id, ...d.data() } as StudentData));
             setAllStudents(students);
@@ -24,8 +24,8 @@ export const useStudentData = (email: string | null | undefined) => {
         fetchAll();
 
         // 2. Real-time listener for current student
-        const unsub = onSnapshot(doc(db, "students", email), (doc) => {
-            if (doc.exists()) {
+        const unsub = onSnapshot(doc(db, "users", email), (doc) => {
+            if (doc.exists() && doc.data().role === "STUDENT") {
                 const studentData = { id: doc.id, ...doc.data() } as StudentData;
                 setData(studentData);
             }

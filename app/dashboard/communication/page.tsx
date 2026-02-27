@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { Bell, Send, User, Search, CheckCircle2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, addDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
-import { getAllocations } from "@/lib/allocationStore";
 
 interface MessageData {
     id: string;
@@ -36,7 +35,6 @@ export default function StudentCommunicationPage() {
     const studentEmail = session?.user?.email;
 
     const [dbTeachers, setDbTeachers] = useState<any[]>([]);
-    const [assignedTeacherEmails, setAssignedTeacherEmails] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
     const [messageInput, setMessageInput] = useState("");
@@ -51,20 +49,6 @@ export default function StudentCommunicationPage() {
         });
         return () => unsub();
     }, []);
-
-    // Get assigned teachers for this student
-    useEffect(() => {
-        if (!studentEmail) return;
-        const allocations = getAllocations();
-        const studentId = studentEmail.split('@')[0]; // Quick hack since our local store uses short IDs, ideally allocations should use emails
-        // Better: just find all allocations where studentEmail is present.
-        const myTeacherEmails = allocations
-            .filter((a: any) => a.studentIds.includes(studentId) || a.studentIds.includes(studentEmail))
-            .map((a: any) => a.facultyId); // Assumes facultyId is an email in the store, if not we will just map all teachers for demo purposes.
-
-        // If the store logic is shaky, just allow the student to message any faculty member.
-        setAssignedTeacherEmails(myTeacherEmails);
-    }, [studentEmail]);
 
     const MY_TEACHERS = dbTeachers; // Giving access to message any teacher for simplicity
 

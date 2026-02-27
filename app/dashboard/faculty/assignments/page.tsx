@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { BookOpen, Search, Save, Plus } from "lucide-react";
-import { getStudentsForFacultyByEmail, getAllocations } from "@/lib/allocationStore";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
 
 const V = {
     card: "var(--ds-card, rgba(255,255,255,0.025))",
@@ -27,41 +26,33 @@ export default function AssignmentsPage() {
     const teacherEmail = session?.user?.email;
 
     const [dbStudents, setDbStudents] = useState<any[]>([]);
-    const [assignedIds, setAssignedIds] = useState<string[]>([]);
-    const [query, setQuery] = useState("");
+    const [querySearch, setQuerySearch] = useState("");
     const [subjectName, setSubjectName] = useState("Math");
     const [marks, setMarks] = useState<Record<string, string>>({});
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        const unsub = onSnapshot(collection(db, "students"), (snap) => {
+        if (!teacherEmail) return;
+
+        const q = query(
+            collection(db, "users"),
+            where("role", "==", "STUDENT"),
+            where("assignedFacultyIds", "array-contains", teacherEmail)
+        );
+
+        const unsub = onSnapshot(q, (snap) => {
             const students = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             setDbStudents(students);
         });
+
         return () => unsub();
-    }, []);
+    }, [teacherEmail]);
 
-    useEffect(() => {
-        const load = () => {
-            const ids = teacherEmail
-                ? getStudentsForFacultyByEmail(teacherEmail)
-                : dbStudents.map((s: any) => s.id);
-            setAssignedIds(ids);
-        };
-        load();
-    }, [teacherEmail, dbStudents]);
-
-    const MY_STUDENTS = dbStudents.filter((s: any) => {
-        const isAssignedToMe = assignedIds.includes(s.id);
-        const currentAllocations = getAllocations();
-        const allAssignedIds = currentAllocations.flatMap((a: any) => a.studentIds);
-        const isUnassigned = !allAssignedIds.includes(s.id);
-        return isAssignedToMe || isUnassigned;
-    });
+    const MY_STUDENTS = dbStudents;
 
     const filtered = MY_STUDENTS.filter(s =>
-        s.name.toLowerCase().includes(query.toLowerCase()) ||
-        (s.roll || "").toLowerCase().includes(query.toLowerCase())
+        s.name.toLowerCase().includes(querySearch.toLowerCase()) ||
+        (s.registerNumber || s.roll || "").toLowerCase().includes(querySearch.toLowerCase())
     );
 
     const handleMarkChange = (studentId: string, val: string) => {
@@ -91,7 +82,7 @@ export default function AssignmentsPage() {
                 if (!student) continue;
 
                 // Get fresh document copy
-                const studentRef = doc(db, "students", student.email);
+                const studentRef = doc(db, "users", student.email);
                 const snap = await getDoc(studentRef);
                 const currData = snap.data();
                 if (!currData) continue;
@@ -138,7 +129,7 @@ export default function AssignmentsPage() {
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap", flex: 1 }}>
                         <div style={{ minWidth: 200, display: "flex", alignItems: "center", gap: 10, background: V.searchBg, borderRadius: 10, padding: "0 14px", border: `1px solid ${V.border}` }}>
                             <Search size={15} color={V.muted} />
-                            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Filter students..."
+                            <input value={querySearch} onChange={e => setQuerySearch(e.target.value)} placeholder="Filter students..."
                                 style={{ background: "none", border: "none", color: V.text, outline: "none", padding: "11px 0", width: "100%", fontSize: "0.88rem", fontFamily: "inherit" }} />
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, background: V.searchBg, borderRadius: 10, padding: "0 14px", border: `1px solid ${V.border}` }}>
@@ -178,7 +169,7 @@ export default function AssignmentsPage() {
                                             {s.name}
                                         </div>
                                     </td>
-                                    <td style={{ padding: "13px 14px", color: V.dim, fontWeight: 600 }}>{s.roll || "CSE000"}</td>
+                                    <td style={{ padding: "13px 14px", color: V.dim, fontWeight: 600 }}>{s.registerNumber || s.roll || "REG000"}</td>
                                     <td style={{ padding: "13px 14px" }}>
                                         <input
                                             type="number"

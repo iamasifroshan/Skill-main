@@ -95,7 +95,7 @@ export default function DashboardStats({ role }: { role: string }) {
         },
         {
             label: "Skill Readiness",
-            value: student ? `${Math.round(student.subjects.reduce((a, b) => a + b.marks, 0) / student.subjects.length)}%` : "...",
+            value: student ? `${Math.round((student.subjects || []).reduce((a: any, b: any) => a + b.marks, 0) / Math.max((student.subjects || []).length, 1))}%` : "...",
             trend: "+10%",
             trendUp: true,
             icon: Target

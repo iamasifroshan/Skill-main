@@ -10,7 +10,6 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell
 } from "recharts";
 import { DEPARTMENTS, RETENTION_TREND, FACULTY_MEMBERS, SYSTEM_STATS, RECENT_LOGINS } from "@/lib/adminData";
-import { getAllocations } from "@/lib/allocationStore";
 import { STUDENTS } from "@/lib/mockData";
 import Link from "next/link";
 
@@ -55,10 +54,8 @@ const RISK_PIE = [
 const DEPT_PERF = DEPARTMENTS.map(d => ({ dept: d.name.split(" ")[0], avg: d.avgPerf, retention: d.retention }));
 
 export default function AdminOverview({ adminName }: { adminName: string }) {
-    const [allocations, setAllocations] = useState<any[]>([]);
     const [dbStudents, setDbStudents] = useState<any[]>([]);
     useEffect(() => {
-        setAllocations(getAllocations());
         fetch("/api/students").then(res => res.json()).then(data => {
             if (Array.isArray(data)) setDbStudents(data);
         });
